@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivia de Conocimiento General</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#172554,#312e81,#581c87);color:#fff;min-height:100vh}
+  .wrap{max-width:760px;margin:auto;padding:24px 16px 50px}
+  .card{background:#fff;color:#172033;border-radius:24px;padding:28px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+  .hero{text-align:center;margin-bottom:20px}
+  .hero .emoji{font-size:54px}
+  h1{margin:8px 0;font-size:32px}
+  .subtitle{color:#64748b;margin:0 0 18px}
+  .progress{height:9px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin:18px 0 24px}
+  .bar{height:100%;width:0;background:#6366f1;transition:.25s}
+  .qnum{font-size:14px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.08em}
+  .question{font-size:24px;line-height:1.3;margin:10px 0 20px;font-weight:750}
+  .option{width:100%;text-align:left;border:2px solid #e2e8f0;background:#f8fafc;padding:15px 16px;border-radius:14px;margin:8px 0;font-size:17px;cursor:pointer;transition:.15s}
+  .option:hover{border-color:#818cf8;background:#eef2ff}
+  .option:disabled{cursor:default}
+  .correct{border-color:#16a34a!important;background:#dcfce7!important}
+  .wrong{border-color:#dc2626!important;background:#fee2e2!important}
+  .answer{display:none;margin-top:18px;padding:16px;border-radius:14px;background:#f1f5f9}
+  .answer.show{display:block}
+  .answer strong{color:#166534}
+  .explanation{margin:8px 0 0;color:#475569;line-height:1.45}
+  .actions{display:flex;gap:10px;margin-top:22px}
+  button.next,.restart{flex:1;border:0;border-radius:14px;padding:14px;font-size:17px;font-weight:700;cursor:pointer;background:#4f46e5;color:#fff}
+  button.next:disabled{opacity:.4;cursor:not-allowed}
+  .score{display:none;text-align:center}
+  .score h2{font-size:30px}
+  .scoreNumber{font-size:58px;font-weight:800;color:#4f46e5}
+  .share{margin-top:12px;background:#0f766e!important}
+  .small{font-size:13px;color:#64748b;margin-top:16px;text-align:center}
+  @media(max-width:520px){.card{padding:21px}.question{font-size:21px}h1{font-size:27px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div id="quiz">
+      <div class="hero">
+        <div class="emoji">🧠</div>
+        <h1>Trivia de Conocimiento General</h1>
+        <p class="subtitle">¿Cuánto sabes? 30 preguntas · dificultad progresiva</p>
+      </div>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="qnum" id="qnum"></div>
+      <div class="question" id="question"></div>
+      <div id="options"></div>
+      <div class="answer" id="answer"></div>
+      <div class="actions">
+        <button class="next" id="next" disabled>Siguiente →</button>
+      </div>
+      <div class="small">Selecciona una respuesta para descubrir si acertaste.</div>
+    </div>
+
+    <div class="score" id="score">
+      <div class="hero">
+        <div class="emoji">🏆</div>
+        <h1>¡Trivia terminada!</h1>
+      </div>
+      <div class="scoreNumber" id="scoreNumber"></div>
+      <h2 id="scoreText"></h2>
+      <p id="scoreDetail"></p>
+      <button class="restart" onclick="restart()">Jugar de nuevo</button>
+      <button class="restart share" onclick="shareResult()">📲 Compartir resultado</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+{q:"¿Cuál es el planeta más grande del sistema solar?",o:["Marte","Saturno","Júpiter","Neptuno"],a:2,e:"Júpiter es el planeta más grande del sistema solar, con un diámetro de unos 143.000 km."},
+{q:"¿Cuál es la capital de Australia?",o:["Sídney","Melbourne","Canberra","Perth"],a:2,e:"Canberra es la capital de Australia desde 1913."},
+{q:"¿Quién pintó la Mona Lisa?",o:["Vincent van Gogh","Leonardo da Vinci","Pablo Picasso","Miguel Ángel"],a:1,e:"Leonardo da Vinci pintó la Mona Lisa durante el Renacimiento."},
+{q:"¿Cuántos continentes se consideran normalmente en el modelo de siete continentes?",o:["5","6","7","8"],a:2,e:"El modelo más utilizado internacionalmente cuenta África, América del Norte, América del Sur, Antártida, Asia, Europa y Oceanía."},
+{q:"¿Cuál es el océano más grande del planeta?",o:["Atlántico","Índico","Ártico","Pacífico"],a:3,e:"El océano Pacífico es el mayor y cubre aproximadamente un tercio de la superficie terrestre."},
+{q:"¿Qué elemento químico tiene el símbolo Au?",o:["Plata","Oro","Argón","Aluminio"],a:1,e:"Au proviene del latín aurum, que significa oro."},
+{q:"¿En qué país se encuentran las pirámides de Guiza?",o:["México","Perú","Egipto","Jordania"],a:2,e:"Las pirámides de Guiza están cerca de El Cairo, Egipto."},
+{q:"¿Cuál es el idioma con más hablantes nativos del mundo?",o:["Inglés","Español","Mandarín","Hindi"],a:2,e:"El chino mandarín tiene el mayor número de hablantes nativos; el inglés destaca por su enorme cantidad de hablantes totales."},
+{q:"¿Qué órgano bombea la sangre por el cuerpo?",o:["Pulmón","Hígado","Corazón","Riñón"],a:2,e:"El corazón funciona como una bomba muscular que impulsa la sangre por la circulación."},
+{q:"¿Quién escribió 'Don Quijote de la Mancha'?",o:["Gabriel García Márquez","Miguel de Cervantes","Pablo Neruda","Jorge Luis Borges"],a:1,e:"Miguel de Cervantes escribió Don Quijote, cuya primera parte apareció en 1605."},
+{q:"¿Cuál es la moneda oficial de Japón?",o:["Won","Yuan","Yen","Rupia"],a:2,e:"La moneda oficial de Japón es el yen (¥)."},
+{q:"¿Qué gas absorben principalmente las plantas durante la fotosíntesis?",o:["Oxígeno","Nitrógeno","Dióxido de carbono","Hidrógeno"],a:2,e:"Las plantas utilizan dióxido de carbono, agua y energía luminosa para producir materia orgánica durante la fotosíntesis."},
+{q:"¿Cuál es el río generalmente considerado el más largo del mundo?",o:["Amazonas","Nilo","Yangtsé","Misisipi"],a:1,e:"El Nilo suele figurar como el río más largo; existe debate científico sobre la comparación exacta con el Amazonas según el método de medición."},
+{q:"¿Qué país regaló la Estatua de la Libertad a Estados Unidos?",o:["Reino Unido","Francia","Italia","España"],a:1,e:"Francia regaló la Estatua de la Libertad a Estados Unidos; fue inaugurada en 1886."},
+{q:"¿Cuál es el metal principal del que está hecho el núcleo de la Tierra?",o:["Cobre","Hierro","Aluminio","Zinc"],a:1,e:"El núcleo terrestre está compuesto principalmente por hierro, acompañado de otros elementos como níquel."},
+{q:"¿En qué año llegó el ser humano a la Luna por primera vez?",o:["1965","1969","1972","1959"],a:1,e:"La misión Apolo 11 logró el primer alunizaje tripulado en julio de 1969."},
+{q:"¿Qué país tiene forma aproximada de bota en el mapa de Europa?",o:["Grecia","Italia","Portugal","Croacia"],a:1,e:"Italia es famosa por su característica forma de bota."},
+{q:"¿Cuál es el hueso más largo del cuerpo humano?",o:["Tibia","Húmero","Fémur","Radio"],a:2,e:"El fémur, situado en el muslo, es el hueso más largo y uno de los más resistentes del cuerpo humano."},
+{q:"¿Qué científico formuló las leyes del movimiento y la gravitación universal?",o:["Albert Einstein","Isaac Newton","Galileo Galilei","Nikola Tesla"],a:1,e:"Isaac Newton publicó sus leyes del movimiento y la gravitación universal en 1687."},
+{q:"¿Cuál es la capital de Canadá?",o:["Toronto","Vancouver","Montreal","Ottawa"],a:3,e:"Ottawa es la capital de Canadá, aunque Toronto es su ciudad más poblada."},
+{q:"¿Qué instrumento mide la presión atmosférica?",o:["Termómetro","Barómetro","Higrómetro","Anemómetro"],a:1,e:"El barómetro mide la presión atmosférica."},
+{q:"¿Cuál es el país más grande del mundo por superficie?",o:["Canadá","China","Estados Unidos","Rusia"],a:3,e:"Rusia es el país con mayor superficie territorial del mundo."},
+{q:"¿Qué autor escribió la saga de Harry Potter?",o:["J.R.R. Tolkien","J.K. Rowling","C.S. Lewis","Suzanne Collins"],a:1,e:"J.K. Rowling escribió la serie de novelas de Harry Potter."},
+{q:"¿Qué planeta es conocido como el planeta rojo?",o:["Venus","Marte","Mercurio","Urano"],a:1,e:"Marte tiene un aspecto rojizo debido principalmente a minerales de hierro oxidados en su superficie."},
+{q:"¿Cuál es la velocidad aproximada de la luz en el vacío?",o:["30.000 km/s","300.000 km/s","3.000 km/s","3.000.000 km/s"],a:1,e:"La luz viaja en el vacío a aproximadamente 299.792 km/s."},
+{q:"¿Cuál es el país de origen de los Juegos Olímpicos antiguos?",o:["Italia","Grecia","Egipto","Turquía"],a:1,e:"Los Juegos Olímpicos antiguos se celebraban en Olimpia, en la antigua Grecia."},
+{q:"¿Qué red social lanzó originalmente el concepto de 'stories' que desaparecen en 24 horas y lo popularizó masivamente?",o:["LinkedIn","Snapchat","Facebook","YouTube"],a:1,e:"Snapchat popularizó este formato efímero; posteriormente fue adoptado por muchas otras plataformas."},
+{q:"¿Cuál es el principal componente del aire terrestre por volumen?",o:["Oxígeno","Dióxido de carbono","Nitrógeno","Argón"],a:2,e:"El nitrógeno constituye aproximadamente el 78% del aire seco de la atmósfera."},
+{q:"¿Qué país ganó la primera Copa Mundial de fútbol en 1930?",o:["Argentina","Brasil","Uruguay","Italia"],a:2,e:"Uruguay ganó la primera Copa Mundial, celebrada en Montevideo en 1930."},
+{q:"¿Cuál de estos números es un número primo?",o:["21","29","35","39"],a:1,e:"29 es primo porque solo es divisible exactamente entre 1 y 29."}
+];
+
+let current=0, score=0, answered=false;
+
+function render(){
+  const x=questions[current];
+  document.getElementById("qnum").textContent=`Pregunta ${current+1} de ${questions.length}`;
+  document.getElementById("bar").style.width=((current)/questions.length*100)+"%";
+  document.getElementById("question").textContent=x.q;
+  const box=document.getElementById("options");
+  box.innerHTML="";
+  document.getElementById("answer").className="answer";
+  document.getElementById("answer").innerHTML="";
+  const next=document.getElementById("next");
+  next.disabled=true;
+  next.textContent=current===questions.length-1?"Ver resultado →":"Siguiente →";
+  answered=false;
+  x.o.forEach((opt,i)=>{
+    const b=document.createElement("button");
+    b.className="option";
+    b.textContent=String.fromCharCode(65+i)+") "+opt;
+    b.onclick=()=>choose(i);
+    box.appendChild(b);
+  });
+}
+function choose(i){
+  if(answered)return;
+  answered=true;
+  const x=questions[current];
+  const buttons=[...document.querySelectorAll(".option")];
+  buttons.forEach(b=>b.disabled=true);
+  buttons[x.a].classList.add("correct");
+  const ans=document.getElementById("answer");
+  if(i===x.a){score++; ans.innerHTML=`<strong>✅ ¡Correcto!</strong><div class="explanation">${x.e}</div>`;}
+  else{buttons[i].classList.add("wrong"); ans.innerHTML=`<strong>❌ Incorrecto.</strong> La respuesta correcta es <b>${String.fromCharCode(65+x.a)}) ${x.o[x.a]}</b>.<div class="explanation">${x.e}</div>`;}
+  ans.classList.add("show");
+  document.getElementById("next").disabled=false;
+}
+document.getElementById("next").onclick=()=>{
+  if(!answered)return;
+  if(current<questions.length-1){current++;render();}
+  else finish();
+};
+function finish(){
+  document.getElementById("quiz").style.display="none";
+  document.getElementById("score").style.display="block";
+  document.getElementById("scoreNumber").textContent=`${score} / ${questions.length}`;
+  let t=score>=27?"¡Nivel excepcional! 🧠🔥":score>=23?"¡Excelente conocimiento! 👏":score>=18?"¡Muy buen resultado! 😎":score>=12?"Buen intento. ¡A seguir aprendiendo! 💪":"Hay espacio para una revancha. 😄";
+  document.getElementById("scoreText").textContent=t;
+  document.getElementById("scoreDetail").textContent=`Acertaste ${score} de ${questions.length} preguntas.`;
+}
+function restart(){current=0;score=0;document.getElementById("score").style.display="none";document.getElementById("quiz").style.display="block";render();}
+async function shareResult(){
+  const text=`🧠 Mi resultado en la Trivia de Conocimiento General: ${score}/${questions.length}. ¿Puedes superarme?`;
+  if(navigator.share){try{await navigator.share({title:"Trivia de Conocimiento General",text});}catch(e){}}
+  else{try{await navigator.clipboard.writeText(text);alert("Resultado copiado. ¡Pégalo en WhatsApp!");}catch(e){alert(text);}}
+}
+render();
+</script>
+</body>
+</html>
